@@ -1,0 +1,4 @@
+[[tasks]]
+name = "启动游戏" # 任务的名字，可选，默认为任务类型
+type = "StartUp" # maa任务的类型
+params = { client_type = "Bilibili", start_game_enabled = true } # maa任务的参数

@@ -1,0 +1,20 @@
+[connection]
+preset = "arknights"
+adb_path = "/usr/bin/adb"
+device = "arknights:5555"
+config = "CompatPOSIXShell"
+
+[resource]
+global_resource = "Bilibili"
+platform_diff_resource = ""
+user_resource = true
+
+[static_options]
+cpu_ocr = true
+# gpu_ocr = 0
+
+[instance_options]
+touch_mode = "MAATouch"
+deployment_with_pause = false
+adb_lite_enabled = false
+kill_adb_on_exit = false

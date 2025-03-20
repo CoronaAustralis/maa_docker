@@ -1,0 +1,2 @@
+30 05 * * * /app/tasks.sh 0
+30 17 * * * /app/tasks.sh 1
