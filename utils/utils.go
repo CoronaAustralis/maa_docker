@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io"
 	"maa-server/config"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/electricbubble/gadb"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
@@ -134,9 +136,7 @@ func AddOneMonth(t time.Time) time.Time {
 }
 
 
-
-func CheckGame() string {
-	
+func IsGameReady() (string,bool) {
 	device := config.Profiles.Connection.Device
 	res := strings.Split(device, ":")
 	var port int
@@ -145,7 +145,7 @@ func CheckGame() string {
 		port, err = strconv.Atoi(res[1])
 		if err != nil {
 			log.Errorln(err)
-			return "adb address configuration error"
+			return "adb address configuration error",false
 		}
 	}else{
 		port = 5555
@@ -156,17 +156,17 @@ func CheckGame() string {
 	adbClient, err := gadb.NewClient()
 	if err != nil {
 		log.Println(err)
-		return "gadb error"
+		return "gadb error",false
 	}
     err = adbClient.Connect(res[0],port)
     if err != nil {
 		log.Println(err)
-		return "adb connect error"
+		return "adb connect error",false
 	}
     devices,err := adbClient.DeviceList()
     if err != nil {
 		log.Println(err)
-		return "gadb error"
+		return "gadb error",false
 	}
 	var d *gadb.Device
     for _, de := range devices {
@@ -177,18 +177,41 @@ func CheckGame() string {
 	}
 	if d == nil {
 		log.Println("device not found")
-		return "device not found"
+		return "device not found",false
 	}
-	output, err := d.RunShellCommand("pm list packages | grep 'com.hypergryph.arknights.bilibili'")
+
+	
+	output, err := d.RunShellCommand("pm list packages")
+	game_map := map[string]string{"官服":"com.hypergryph.arknights", "B服":"com.hypergryph.arknights.bilibili"}
 	if output == "" || err != nil {
-		return "game not found"
+		return "game not found",false
 	}
-	return "game ready"
+	result := ""
+
+	// 按行分割 output
+	lines := strings.Split(output, "\n")
+
+	// 遍历每一行，检查是否包含 game_map 中的值
+	for _, line := range lines {
+		// 去掉前缀 "package:"，以获取实际的包名
+		packageName := strings.TrimPrefix(line, "package:")
+
+		// 遍历 game_map 进行匹配
+		for k, v := range game_map {
+			if packageName == v { // 严格匹配包名
+				result += k + "已就绪\n"
+			}
+		}
+	}
+	return result,true
 }
 
 func StopGame(d *gadb.Device) {
-	_, err := d.RunShellCommand("am force-stop com.hypergryph.arknights.bilibili")
-	if err != nil {
-		log.Println(err)
+	game_map := map[string]string{"官服":"com.hypergryph.arknights", "B服":"com.hypergryph.arknights.bilibili"}
+	for _,v := range game_map{
+		_, err := d.RunShellCommand(fmt.Sprintf("am force-stop %s",v))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }

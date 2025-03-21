@@ -150,18 +150,87 @@ func  ChangeTaskFile(c *gin.Context) {
 }
 
 func GetProfiles(c *gin.Context) {
-	c.JSON(200, gin.H{"code":0,"data":config.Profiles})
+	content, err := scheduler.ReadProfile()
+	if err == nil {
+		c.JSON(http.StatusOK, map[string]any{
+			"code":             0,
+			"err":              err,
+			"content":          content,
+		})
+	} else {
+		c.JSON(http.StatusBadRequest, map[string]any{
+			"code":             1,
+			"err":              err.Error(),
+			"content":          content,
+		})
+	}
 }
 
-func UpdateProfiles(c *gin.Context){
+func UpdateProfile(c *gin.Context){
 	var data config.ProfilesStruct
 	if err := c.BindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code":1,"err": err.Error()})
 		return
 	}
-	config.Profiles = &data
-	config.UpdateProfiles()
 
-	result := utils.CheckGame()
-	c.JSON(200, gin.H{"code":0,"data":result})
+	var msg string;
+
+	if scheduler.ScheduleData.CurrentTaskCluster != nil {
+		msg = "当前任务正在运行"
+	}else{
+		msg = ""
+	}
+	
+	config.Profiles = &data
+	config.UpdateProfile()
+
+	c.JSON(http.StatusOK, map[string]any{
+		"code":             0,
+		"msg": msg,
+	})
+}
+
+func CheckGame(c *gin.Context){
+	res,flag := utils.IsGameReady()
+	if flag {
+		c.JSON(http.StatusOK, map[string]any{
+			"code":             0,
+			"msg": res,
+			"err":res,
+		})
+	}else{
+		c.JSON(http.StatusBadRequest, map[string]any{
+			"code":             1,
+			"msg": res,
+			"err":res,
+		})
+	}
+}
+
+func UpdateClientType(c *gin.Context){
+	var data map[string]string
+	if err := c.BindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code":1,"err": err.Error()})
+		return
+	}
+
+	log.Println(config.StartConfig)
+	if(data["clientType"] == ""){
+		c.JSON(http.StatusOK, map[string]any{
+			"code":             0,
+			"msg": "",
+			"data": config.StartConfig.Task.Params.ClientType,
+			"err":"",
+		})
+		return
+	}
+	config.StartConfig.Task.Params.ClientType = data["clientType"]
+	config.UpdateStartConfig()
+	
+	c.JSON(http.StatusOK, map[string]any{
+		"code":             0,
+		"msg": "切换成功",
+		"data": config.StartConfig.Task.Params.ClientType,
+		"err":"",
+	})
 }

@@ -17,6 +17,10 @@ func Init(e *gin.Engine) {
 	api.POST("/ChangeTaskFile",ChangeTaskFile)
 
 	api.POST("/GetProfiles",GetProfiles)
-	api.POST("/UpdateProfiles",UpdateProfiles)
+	api.POST("/UpdateProfiles",UpdateProfile)
+	
+	api.GET("/CheckGame",CheckGame)
+
+	api.POST("UpdateClientType",UpdateClientType)
 }
 

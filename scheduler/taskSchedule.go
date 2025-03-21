@@ -4,6 +4,8 @@ import (
 	"log"
 	"maa-server/config"
 	"maa-server/utils"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"time"
@@ -19,7 +21,7 @@ func GetTask() config.TaskCluster {
 	now := time.Now()
 	queue := map[string][]config.TaskCluster{"day": {}, "week": {}, "month": {}, "custom": {}}
 	for _, v := range config.Conf.TaskCluster {
-		if now.After(v.Time) && v.IsEnable {
+		if now.After(v.Time) && v.IsEnable && len(v.Tasks) > 0 {
 			queue[v.Type] = append(queue[v.Type], v)
 		} else {
 		}
@@ -44,11 +46,39 @@ func GetTask() config.TaskCluster {
 }
 
 func RunTask(task config.TaskCluster) {
-	log.Println("开始任务：", task.Alias)
-	time.Sleep(10 * time.Second)
-	log.Println(task.Tasks)
-	log.Println("结束任务：", task.Alias)
-	tmp := config.Conf.TaskCluster[task.Hash]
+	MaaStartGame()
+	for _, v := range task.Tasks {
+		log.Println("开始任务：", v)
+		flag := 0
+		for flag < 3 {
+			flag++
+			err := MaaRun(v)
+			if err != nil {
+				log.Println("任务执行失败：", v)
+				log.Println("重试。。。")
+				MaaStopGame()
+				MaaStartGame()
+			} else {
+				break
+			}
+		}
+		if flag == 3 {
+			log.Println("达到最大重试次数")
+			tmp, exists := config.Conf.TaskCluster[task.Hash]
+			if !exists {
+				return
+			}
+			tmp.IsEnable = false
+			config.Conf.TaskCluster[task.Hash] = tmp
+			config.UpdateConfig()
+			return
+		}
+	}
+	MaaStopGame()
+	tmp, exists := config.Conf.TaskCluster[task.Hash]
+	if !exists {
+		return
+	}
 	if task.Time.Equal(tmp.Time) {
 		if task.Type == "day" {
 			tmp.Time = tmp.Time.Add(24 * time.Hour)
@@ -67,4 +97,37 @@ func RunTask(task config.TaskCluster) {
 	}
 	ScheduleData.CurrentTaskCluster = nil
 	ScheduleData.FinishCallChan <- 1
+}
+
+func MaaRun(task string) error {
+	cmd := exec.Command("maa", "run", "tmp/"+task)
+
+	// 将子进程的输出和错误重定向到当前进程的标准输出和错误
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// 启动子进程
+	return cmd.Run()
+}
+
+func MaaStartGame(){
+	cmd := exec.Command("maa", "run", "template/start")
+
+	// 将子进程的输出和错误重定向到当前进程的标准输出和错误
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// 启动子进程
+	cmd.Run()
+}
+
+func MaaStopGame(){
+	cmd := exec.Command("maa", "run", "template/end")
+
+	// 将子进程的输出和错误重定向到当前进程的标准输出和错误
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// 启动子进程
+	cmd.Run()
 }

@@ -10,6 +10,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type StartConfigStruct struct {
+	Task struct {
+		Name   string `toml:"name"`
+		Type   string `toml:"type"`
+		Params struct {
+			ClientType       string `toml:"client_type"`
+			StartGameEnabled bool   `toml:"start_game_enabled"`
+		} `toml:"params"`
+	}
+}
 
 type ProfilesStruct struct {
 	Connection struct {
@@ -17,6 +27,12 @@ type ProfilesStruct struct {
 		Device  string `toml:"device"`
 		Config  string `toml:"config"`
 	} `toml:"connection"`
+
+	Resource struct {
+		GlobalResource       string `toml:"global_resource"`
+		PlatformDiffResource string `toml:"platform_diff_resource"`
+		UserResource         bool   `toml:"user_resource"`
+	} `toml:"resource"`
 
 	StaticOptions struct {
 		CpuOcr bool `toml:"cpu_ocr"`
@@ -32,30 +48,31 @@ type ProfilesStruct struct {
 
 // TaskCluster represents a cluster of tasks
 type TaskCluster struct {
-	Hash 		string `json:"hash"`
-	IsEnable  bool     `json:"isEnable"`
-	Type  string     `json:"type"`
-	Alias string     `json:"alias"`
-	Time  time.Time `json:"time"`
-	Tasks []string   `json:"tasks"`
+	Hash     string    `json:"hash"`
+	IsEnable bool      `json:"isEnable"`
+	Type     string    `json:"type"`
+	Alias    string    `json:"alias"`
+	Time     time.Time `json:"time"`
+	Tasks    []string  `json:"tasks"`
 }
 
-type DStruct struct{
-	ExecuteDir string
-	HomeDir string
+type DStruct struct {
+	ExecuteDir  string
+	HomeDir     string
 	ProfilesDir string
-	FightDir string
+	FightDir    string
 }
 
 // Root represents the root JSON structure
 type Config struct {
-	TaskCluster map[string]TaskCluster `json:"task_cluster"`
-	TemplateCluster TaskCluster `json:"template_cluster"`
+	TaskCluster     map[string]TaskCluster `json:"task_cluster"`
+	TemplateCluster TaskCluster            `json:"template_cluster"`
 }
 
 var Conf = &Config{TaskCluster: make(map[string]TaskCluster)}
 var D = &DStruct{}
-var Profiles  = &ProfilesStruct{}
+var Profiles = &ProfilesStruct{}
+var StartConfig = &StartConfigStruct{}
 
 func init() {
 	maa_dev := os.Getenv("MAA_DEV")
@@ -76,7 +93,7 @@ func init() {
 	}
 	err = json.Unmarshal(configBytes, Conf)
 	if err != nil {
-		log.Panicln("unmarshal config error: ",err)
+		log.Panicln("unmarshal config error: ", err)
 	}
 	log.Println(Conf)
 
@@ -93,31 +110,47 @@ func init() {
 	if _, err := toml.DecodeFile(filepath.Join(D.ProfilesDir, "default.toml"), Profiles); err != nil {
 		log.Fatalf("Error decoding TOML file: %v", err)
 	}
+	
+	if _, err := toml.DecodeFile(filepath.Join(D.FightDir, "template", "start.toml"), StartConfig); err != nil {
+		log.Fatalf("Error decoding TOML file: %v", err)
+	}
 }
 
+func UpdateProfile() {
+	profilePath := filepath.Join(D.ProfilesDir, "default.toml")
 
-func UpdateConfig(){
-	configPath := filepath.Join(D.ExecuteDir, "./config/config.json")
-	
-	if v, err := json.MarshalIndent(Conf,"", "  ");err != nil{
+	if v, err := toml.Marshal(Profiles); err != nil {
 		log.Println("serialize failed, err: ", err)
-	}else{
-	err := os.WriteFile(configPath, v, 0777)
-		if err!=nil{
-			log.Println("serialize failed, err: ",err)
+	} else {
+		err := os.WriteFile(profilePath, v, 0777)
+		if err != nil {
+			log.Println("serialize failed, err: ", err)
 		}
 	}
 }
 
+func UpdateStartConfig(){
+	startConfigPath := filepath.Join(D.FightDir, "template", "start.toml")
 
-func UpdateProfiles(){
-	profilesPath := filepath.Join(D.ProfilesDir, "default.toml")
-	if v, err := toml.Marshal(Profiles); err != nil{
+	if v, err := toml.Marshal(StartConfig); err != nil {
 		log.Println("serialize failed, err: ", err)
-	}else{
-	err := os.WriteFile(profilesPath, v, 0777)
-		if err!=nil{
-			log.Println("serialize failed, err: ",err)
+	} else {
+		err := os.WriteFile(startConfigPath, v, 0777)
+		if err != nil {
+			log.Println("serialize failed, err: ", err)
+		}
+	}
+}
+
+func UpdateConfig() {
+	configPath := filepath.Join(D.ExecuteDir, "./config/config.json")
+
+	if v, err := json.MarshalIndent(Conf, "", "  "); err != nil {
+		log.Println("serialize failed, err: ", err)
+	} else {
+		err := os.WriteFile(configPath, v, 0777)
+		if err != nil {
+			log.Println("serialize failed, err: ", err)
 		}
 	}
 }

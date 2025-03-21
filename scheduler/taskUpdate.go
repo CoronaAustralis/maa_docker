@@ -125,15 +125,3 @@ func ModifyTaskFile(as ApiStruct) (string,error) {
 	return "",nil
 }
 
-func ReadProfile() (string,error) {
-	fs, err := os.Open(filepath.Join(config.D.ProfilesDir, "default.toml"))
-	if(err != nil){
-		return "",err
-	}
-	defer fs.Close()
-	bytes, err := io.ReadAll(fs)
-	if(err != nil){
-		return "",err
-	}
-	return string(bytes),nil
-}
