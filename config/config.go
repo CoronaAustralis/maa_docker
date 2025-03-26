@@ -10,17 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type StartConfigStruct struct {
-	Task struct {
-		Name   string `toml:"name"`
-		Type   string `toml:"type"`
-		Params struct {
-			ClientType       string `toml:"client_type"`
-			StartGameEnabled bool   `toml:"start_game_enabled"`
-		} `toml:"params"`
-	}
-}
-
 type ProfilesStruct struct {
 	Connection struct {
 		AdbPath string `toml:"adb_path"`
@@ -59,6 +48,7 @@ type TaskCluster struct {
 type DStruct struct {
 	ExecuteDir  string
 	HomeDir     string
+	InfrastDir	string
 	ProfilesDir string
 	FightDir    string
 }
@@ -72,7 +62,6 @@ type Config struct {
 var Conf = &Config{TaskCluster: make(map[string]TaskCluster)}
 var D = &DStruct{}
 var Profiles = &ProfilesStruct{}
-var StartConfig = &StartConfigStruct{}
 
 func init() {
 	maa_dev := os.Getenv("MAA_DEV")
@@ -106,12 +95,9 @@ func init() {
 
 	D.ProfilesDir = filepath.Join(homeDir, ".config", "maa", "profiles")
 	D.FightDir = filepath.Join(homeDir, ".config", "maa", "tasks")
+	D.InfrastDir = filepath.Join(homeDir, ".config", "maa", "infrast")
 
 	if _, err := toml.DecodeFile(filepath.Join(D.ProfilesDir, "default.toml"), Profiles); err != nil {
-		log.Fatalf("Error decoding TOML file: %v", err)
-	}
-	
-	if _, err := toml.DecodeFile(filepath.Join(D.FightDir, "template", "start.toml"), StartConfig); err != nil {
 		log.Fatalf("Error decoding TOML file: %v", err)
 	}
 }
@@ -123,19 +109,6 @@ func UpdateProfile() {
 		log.Println("serialize failed, err: ", err)
 	} else {
 		err := os.WriteFile(profilePath, v, 0777)
-		if err != nil {
-			log.Println("serialize failed, err: ", err)
-		}
-	}
-}
-
-func UpdateStartConfig(){
-	startConfigPath := filepath.Join(D.FightDir, "template", "start.toml")
-
-	if v, err := toml.Marshal(StartConfig); err != nil {
-		log.Println("serialize failed, err: ", err)
-	} else {
-		err := os.WriteFile(startConfigPath, v, 0777)
 		if err != nil {
 			log.Println("serialize failed, err: ", err)
 		}

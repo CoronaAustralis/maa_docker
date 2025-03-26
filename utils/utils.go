@@ -135,56 +135,56 @@ func AddOneMonth(t time.Time) time.Time {
 	return time.Date(year, nextMonth, day, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), location)
 }
 
+var D *gadb.Device
 
-func IsGameReady() (string,bool) {
+func IsGameReady() (string, bool) {
 	device := config.Profiles.Connection.Device
 	res := strings.Split(device, ":")
 	var port int
-	if(len(res) == 2){
+	if len(res) == 2 {
 		var err error
 		port, err = strconv.Atoi(res[1])
 		if err != nil {
 			log.Errorln(err)
-			return "adb address configuration error",false
+			return "adb address configuration error", false
 		}
-	}else{
+	} else {
 		port = 5555
 	}
 
-    StartAdbDeamon()
+	StartAdbDeamon()
 
 	adbClient, err := gadb.NewClient()
 	if err != nil {
 		log.Println(err)
-		return "gadb error",false
+		return "gadb error", false
 	}
-    err = adbClient.Connect(res[0],port)
-    if err != nil {
+	err = adbClient.Connect(res[0], port)
+	if err != nil {
 		log.Println(err)
-		return "adb connect error",false
+		return "adb connect error", false
 	}
-    devices,err := adbClient.DeviceList()
-    if err != nil {
+	devices, err := adbClient.DeviceList()
+	if err != nil {
 		log.Println(err)
-		return "gadb error",false
+		return "gadb error", false
 	}
 	var d *gadb.Device
-    for _, de := range devices {
-		if de.Serial() == device{
+	for _, de := range devices {
+		if de.Serial() == device {
 			d = &de
 			break
 		}
 	}
 	if d == nil {
 		log.Println("device not found")
-		return "device not found",false
+		return "device not found", false
 	}
 
-	
 	output, err := d.RunShellCommand("pm list packages")
-	game_map := map[string]string{"官服":"com.hypergryph.arknights", "B服":"com.hypergryph.arknights.bilibili"}
+	game_map := map[string]string{"官服": "com.hypergryph.arknights", "B服": "com.hypergryph.arknights.bilibili"}
 	if output == "" || err != nil {
-		return "game not found",false
+		return "game not found", false
 	}
 	result := ""
 
@@ -203,15 +203,42 @@ func IsGameReady() (string,bool) {
 			}
 		}
 	}
-	return result,true
+	D = d
+	return result, true
 }
 
-func StopGame(d *gadb.Device) {
-	game_map := map[string]string{"官服":"com.hypergryph.arknights", "B服":"com.hypergryph.arknights.bilibili"}
-	for _,v := range game_map{
-		_, err := d.RunShellCommand(fmt.Sprintf("am force-stop %s",v))
+func StopGame() {
+	game_map := map[string]string{"官服": "com.hypergryph.arknights", "B服": "com.hypergryph.arknights.bilibili"}
+	for _, v := range game_map {
+		_, err := D.RunShellCommand(fmt.Sprintf("am force-stop %s", v))
 		if err != nil {
 			log.Println(err)
 		}
 	}
+}
+
+func InitClientType() {
+	clientType := os.Getenv("clientType")
+	if clientType == "" {
+		clientType = "Official"
+	}
+	fs, err := os.OpenFile(filepath.Join(config.D.FightDir, "template/start.toml"), os.O_RDWR, 0777)
+	if err != nil {
+		log.Println("Error reading file:", err)
+		return
+	}
+	defer fs.Close()
+
+	buf, err := io.ReadAll(fs)
+	if err != nil {
+		log.Println("Error reading file:", err)
+		return
+	}
+	tomlStr := string(buf)
+
+	tomlStr = strings.Replace(tomlStr, "init", clientType, 1)
+
+	fs.Seek(0, 0)
+	fs.Truncate(0)
+	fs.WriteString(tomlStr)
 }

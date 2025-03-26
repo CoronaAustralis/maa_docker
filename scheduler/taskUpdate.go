@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"io"
-	"log"
 	"maa-server/config"
 	"maa-server/utils"
 	"os"
@@ -118,7 +117,6 @@ func ModifyTaskFile(as ApiStruct) (string,error) {
 		return "",err
 	}
 	defer fs.Close()
-	log.Println()
 	if _,err := fs.WriteString(as.Content);err !=nil{
 		return "",err
 	}

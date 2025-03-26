@@ -21,6 +21,6 @@ func Init(e *gin.Engine) {
 	
 	api.GET("/CheckGame",CheckGame)
 
-	api.POST("UpdateClientType",UpdateClientType)
+	api.POST("/UploadInfrastFile",UploadInfrastFile)
 }
 

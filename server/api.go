@@ -5,6 +5,7 @@ import (
 	"maa-server/scheduler"
 	"maa-server/utils"
 	"net/http"
+	"path/filepath"
 	"sort"
 
 	"github.com/gin-gonic/gin"
@@ -49,6 +50,7 @@ func ChangeCluster(c *gin.Context) {
 			"code":   0,
 			"msg": str,
 		})
+		return
 	}
 }
 
@@ -77,6 +79,7 @@ func ChangeTask(c *gin.Context) {
 			"err":              err,
 			"taskCluster":      taskCluster,
 		})
+		return
 	} else {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code":             1,
@@ -84,6 +87,7 @@ func ChangeTask(c *gin.Context) {
 			"err":              err.Error(),
 			"taskCluster":      taskCluster,
 		})
+		return
 	}
 }
 
@@ -108,6 +112,7 @@ func GetTaskFile(c *gin.Context) {
 			"err":              err,
 			"content":          content,
 		})
+		return
 	} else {
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"code":             1,
@@ -115,6 +120,7 @@ func GetTaskFile(c *gin.Context) {
 			"err":              err.Error(),
 			"content":          content,
 		})
+		return
 	}
 }
 
@@ -139,6 +145,7 @@ func  ChangeTaskFile(c *gin.Context) {
 			"err":              err,
 			"content":          content,
 		})
+		return
 	} else {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code":             1,
@@ -146,6 +153,7 @@ func  ChangeTaskFile(c *gin.Context) {
 			"err":              err.Error(),
 			"content":          content,
 		})
+		return
 	}
 }
 
@@ -157,12 +165,14 @@ func GetProfiles(c *gin.Context) {
 			"err":              err,
 			"content":          content,
 		})
+		return
 	} else {
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"code":             1,
 			"err":              err.Error(),
 			"content":          content,
 		})
+		return
 	}
 }
 
@@ -188,6 +198,7 @@ func UpdateProfile(c *gin.Context){
 		"code":             0,
 		"msg": msg,
 	})
+	return
 }
 
 func CheckGame(c *gin.Context){
@@ -198,39 +209,35 @@ func CheckGame(c *gin.Context){
 			"msg": res,
 			"err":res,
 		})
+		return
 	}else{
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"code":             1,
 			"msg": res,
 			"err":res,
 		})
+		return
 	}
 }
 
-func UpdateClientType(c *gin.Context){
-	var data map[string]string
-	if err := c.BindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code":1,"err": err.Error()})
-		return
-	}
-
-	log.Println(config.StartConfig)
-	if(data["clientType"] == ""){
-		c.JSON(http.StatusOK, map[string]any{
-			"code":             0,
-			"msg": "",
-			"data": config.StartConfig.Task.Params.ClientType,
-			"err":"",
+func UploadInfrastFile(c *gin.Context){
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "无法获取上传的文件",
+			"code":1,
 		})
 		return
 	}
-	config.StartConfig.Task.Params.ClientType = data["clientType"]
-	config.UpdateStartConfig()
-	
-	c.JSON(http.StatusOK, map[string]any{
-		"code":             0,
-		"msg": "切换成功",
-		"data": config.StartConfig.Task.Params.ClientType,
-		"err":"",
+	uploadPath := filepath.Join(config.D.InfrastDir, "infrast.json") // 保存路径
+	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "无法保存文件",
+			"code":1,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code":0,
 	})
 }

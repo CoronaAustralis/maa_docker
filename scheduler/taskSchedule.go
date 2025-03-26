@@ -1,10 +1,10 @@
 package scheduler
 
 import (
+	"context"
 	"log"
 	"maa-server/config"
 	"maa-server/utils"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -45,6 +45,10 @@ func GetTask() config.TaskCluster {
 	return config.TaskCluster{}
 }
 
+func StartTask() {
+
+}
+
 func RunTask(task config.TaskCluster) {
 	MaaStartGame()
 	for _, v := range task.Tasks {
@@ -52,7 +56,10 @@ func RunTask(task config.TaskCluster) {
 		flag := 0
 		for flag < 3 {
 			flag++
-			err := MaaRun(v)
+			isCancel, err := MaaRun(v)
+			if isCancel {
+				return
+			}
 			if err != nil {
 				log.Println("任务执行失败：", v)
 				log.Println("重试。。。")
@@ -74,7 +81,6 @@ func RunTask(task config.TaskCluster) {
 			return
 		}
 	}
-	MaaStopGame()
 	tmp, exists := config.Conf.TaskCluster[task.Hash]
 	if !exists {
 		return
@@ -95,39 +101,56 @@ func RunTask(task config.TaskCluster) {
 		}
 		config.UpdateConfig()
 	}
-	ScheduleData.CurrentTaskCluster = nil
-	ScheduleData.FinishCallChan <- 1
+	// ScheduleData.FinishCallChan <- 1
 }
 
-func MaaRun(task string) error {
-	cmd := exec.Command("maa", "run", "tmp/"+task)
+func MaaRun(task string) (bool, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	ScheduleData.MaaCancelFunc = cancel
+	cmd := exec.CommandContext(ctx, "maa", "run", "tmp/"+task)
+	err := cmd.Run()
+	if ctx.Err() == context.Canceled {
+		log.Println("Task was canceled")
+		return true, nil
+	}
 
-	// 将子进程的输出和错误重定向到当前进程的标准输出和错误
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// 启动子进程
-	return cmd.Run()
+	if err != nil {
+		log.Printf("Task exited with error: %v\n", err)
+		return false, err
+	}
+	return false, err
 }
 
-func MaaStartGame(){
-	cmd := exec.Command("maa", "run", "template/start")
+func MaaStartGame() (bool, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	ScheduleData.MaaCancelFunc = cancel
+	cmd := exec.CommandContext(ctx, "maa", "run", "template/start")
+	err := cmd.Run()
+	if ctx.Err() == context.Canceled {
+		log.Println("start game was canceled")
+		return true, nil
+	}
 
-	// 将子进程的输出和错误重定向到当前进程的标准输出和错误
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// 启动子进程
-	cmd.Run()
+	if err != nil {
+		log.Printf("start game exited with error: %v\n", err)
+		return false, err
+	}
+	return false, err
 }
 
-func MaaStopGame(){
-	cmd := exec.Command("maa", "run", "template/end")
+func MaaStopGame() (bool, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	ScheduleData.MaaCancelFunc = cancel
+	cmd := exec.CommandContext(ctx, "maa", "run", "template/end")
+	err := cmd.Run()
+	if ctx.Err() == context.Canceled {
+		log.Println("stop game was canceled")
+		return true, nil
+	}
 
-	// 将子进程的输出和错误重定向到当前进程的标准输出和错误
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// 启动子进程
-	cmd.Run()
+	if err != nil {
+		log.Printf("stop game exited with error: %v\n", err)
+		return false, err
+	}
+	return false, err
 }
