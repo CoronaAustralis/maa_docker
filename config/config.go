@@ -84,7 +84,7 @@ func init() {
 	if err != nil {
 		log.Panicln("unmarshal config error: ", err)
 	}
-	log.Println(Conf)
+	log.Infoln(Conf)
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -106,11 +106,11 @@ func UpdateProfile() {
 	profilePath := filepath.Join(D.ProfilesDir, "default.toml")
 
 	if v, err := toml.Marshal(Profiles); err != nil {
-		log.Println("serialize failed, err: ", err)
+		log.Errorln("serialize failed, err: ", err)
 	} else {
 		err := os.WriteFile(profilePath, v, 0777)
 		if err != nil {
-			log.Println("serialize failed, err: ", err)
+			log.Errorln("serialize failed, err: ", err)
 		}
 	}
 }
@@ -119,11 +119,11 @@ func UpdateConfig() {
 	configPath := filepath.Join(D.ExecuteDir, "./config/config.json")
 
 	if v, err := json.MarshalIndent(Conf, "", "  "); err != nil {
-		log.Println("serialize failed, err: ", err)
+		log.Errorln("serialize failed, err: ", err)
 	} else {
 		err := os.WriteFile(configPath, v, 0777)
 		if err != nil {
-			log.Println("serialize failed, err: ", err)
+			log.Errorln("serialize failed, err: ", err)
 		}
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"github.com/electricbubble/gadb"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
@@ -42,7 +41,7 @@ func CopyFile(src, dst string) error {
 
 func CopyDir(src string, dst string) error {
 	if err := cp.Copy(src, dst); err != nil {
-		log.Println(err)
+		log.Errorln(err)
 		return err
 	}
 	return nil
@@ -68,7 +67,7 @@ func CreateNestedFile(path string) (*os.File, error) {
 func DeleteDirSub(path string) error {
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		log.Println("Error reading directory:", err)
+		log.Errorln("Error reading directory:", err)
 		return err
 	}
 
@@ -76,7 +75,7 @@ func DeleteDirSub(path string) error {
 		entryPath := path + "/" + entry.Name()
 		err := os.RemoveAll(entryPath)
 		if err != nil {
-			log.Println("Error removing", entryPath, ":", err)
+			log.Errorln("Error removing", entryPath, ":", err)
 			return err
 		}
 	}
@@ -86,7 +85,7 @@ func DeleteDirSub(path string) error {
 func DeleteFileOrDir(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
 	return err
 }
@@ -94,7 +93,7 @@ func DeleteFileOrDir(path string) error {
 func RenameFile(oldName string, newName string) error {
 	err := os.Rename(oldName, newName)
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
 	return err
 }
@@ -137,7 +136,7 @@ func AddOneMonth(t time.Time) time.Time {
 
 var D *gadb.Device
 
-func IsGameReady() (string, bool) {
+func IsDeviceReady() bool {
 	device := config.Profiles.Connection.Device
 	res := strings.Split(device, ":")
 	var port int
@@ -145,8 +144,8 @@ func IsGameReady() (string, bool) {
 		var err error
 		port, err = strconv.Atoi(res[1])
 		if err != nil {
-			log.Errorln(err)
-			return "adb address configuration error", false
+			log.Errorln("adb address configuration error")
+			return false
 		}
 	} else {
 		port = 5555
@@ -156,18 +155,21 @@ func IsGameReady() (string, bool) {
 
 	adbClient, err := gadb.NewClient()
 	if err != nil {
-		log.Println(err)
-		return "gadb error", false
+		log.Errorln(err)
+		log.Errorln("gadb error")
+		return false
 	}
 	err = adbClient.Connect(res[0], port)
 	if err != nil {
-		log.Println(err)
-		return "adb connect error", false
+		log.Errorln(err)
+		log.Errorln("adb connect error")
+		return false
 	}
 	devices, err := adbClient.DeviceList()
 	if err != nil {
-		log.Println(err)
-		return "gadb error", false
+		log.Errorln(err)
+		log.Errorln("gadb error")
+		return false
 	}
 	var d *gadb.Device
 	for _, de := range devices {
@@ -177,14 +179,23 @@ func IsGameReady() (string, bool) {
 		}
 	}
 	if d == nil {
-		log.Println("device not found")
-		return "device not found", false
+		log.Errorln("device not found")
+		return false
 	}
 
-	output, err := d.RunShellCommand("pm list packages")
-	game_map := map[string]string{"官服": "com.hypergryph.arknights", "B服": "com.hypergryph.arknights.bilibili"}
+	D = d
+	return true
+}
+
+func IsGameReady() string {
+	if !IsDeviceReady() {
+		return ""
+	}
+	output, err := D.RunShellCommand("pm list packages")
+
 	if output == "" || err != nil {
-		return "game not found", false
+		log.Errorln("game not found")
+		return ""
 	}
 	result := ""
 
@@ -197,46 +208,56 @@ func IsGameReady() (string, bool) {
 		packageName := strings.TrimPrefix(line, "package:")
 
 		// 遍历 game_map 进行匹配
-		for k, v := range game_map {
-			if packageName == v { // 严格匹配包名
-				result += k + "已就绪\n"
+		for _, v := range GameMap {
+			if packageName == v["packageName"] { // 严格匹配包名
+				result += v["alias"] + "已就绪\n"
 			}
 		}
 	}
-	D = d
-	return result, true
+	// log.Infoln(result)
+	return result
 }
 
 func StopGame() {
-	game_map := map[string]string{"官服": "com.hypergryph.arknights", "B服": "com.hypergryph.arknights.bilibili"}
-	for _, v := range game_map {
-		_, err := D.RunShellCommand(fmt.Sprintf("am force-stop %s", v))
+	for _, v := range GameMap {
+		_, err := D.RunShellCommand(fmt.Sprintf("am force-stop %s", v["packageName"]))
 		if err != nil {
-			log.Println(err)
+			log.Errorln(err)
 		}
 	}
 }
 
 func InitClientType() {
-	clientType := os.Getenv("clientType")
+	clientType := os.Getenv("client_type")
 	if clientType == "" {
-		clientType = "Official"
+		clientType = "Bilibili"
 	}
 	fs, err := os.OpenFile(filepath.Join(config.D.FightDir, "template/start.toml"), os.O_RDWR, 0777)
 	if err != nil {
-		log.Println("Error reading file:", err)
+		log.Errorln("Error reading file: ", err)
 		return
 	}
 	defer fs.Close()
 
 	buf, err := io.ReadAll(fs)
 	if err != nil {
-		log.Println("Error reading file:", err)
+		log.Errorln("Error reading file: ", err)
 		return
 	}
 	tomlStr := string(buf)
+	flag := false
 
-	tomlStr = strings.Replace(tomlStr, "init", clientType, 1)
+	for k := range GameMap {
+		if strings.Contains(tomlStr, k) {
+			tomlStr = strings.Replace(tomlStr, k, clientType, 1)
+			flag = true
+			break
+		}
+	}
+	if(!flag){
+		log.Errorln("Error: clientType not found in toml file")
+		return
+	}
 
 	fs.Seek(0, 0)
 	fs.Truncate(0)

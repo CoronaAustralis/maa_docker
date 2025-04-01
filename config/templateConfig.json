@@ -1,0 +1,46 @@
+{
+  "task_cluster": {
+    "8x2t8bi2tkz8pajk": {
+      "hash": "8x2t8bi2tkz8pajk",
+      "isEnable": true,
+      "type": "day",
+      "alias": "afternoon",
+      "time": "2025-04-01T09:30:03Z",
+      "tasks": [
+        "infrast",
+        "fight",
+        "recruit",
+        "mall",
+        "award"
+      ]
+    },
+    "y6rim77cd2k6myh4": {
+      "hash": "y6rim77cd2k6myh4",
+      "isEnable": true,
+      "type": "day",
+      "alias": "morning",
+      "time": "2025-04-01T21:30:43Z",
+      "tasks": [
+        "infrast",
+        "fight",
+        "mall",
+        "recruit",
+        "award"
+      ]
+    }
+  },
+  "template_cluster": {
+    "hash": "template",
+    "isEnable": false,
+    "type": "template",
+    "alias": "template",
+    "time": "2024-11-29T10:00:00Z",
+    "tasks": [
+      "infrast",
+      "recruit",
+      "fight",
+      "mall",
+      "award"
+    ]
+  }
+}

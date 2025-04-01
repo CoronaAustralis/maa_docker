@@ -1,10 +1,10 @@
 package server
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 func Init(e *gin.Engine) {
-	e.GET("/",Test)
-	
 	api := e.Group("/api")
 	
 	api.GET("/GetClusters", GetTaskCluster)
@@ -16,11 +16,23 @@ func Init(e *gin.Engine) {
 	api.POST("/GetTaskFile",GetTaskFile)
 	api.POST("/ChangeTaskFile",ChangeTaskFile)
 
-	api.POST("/GetProfiles",GetProfiles)
+	api.GET("/GetProfiles",GetProfiles)
 	api.POST("/UpdateProfiles",UpdateProfile)
 	
+	api.POST("/UploadInfrastFile",UploadInfrastFile)
+
 	api.GET("/CheckGame",CheckGame)
 
-	api.POST("/UploadInfrastFile",UploadInfrastFile)
+	api.GET("/GetRunningTask",GetRunningTask)
+	api.GET("/ForceStopRunningTask",ForceStopRunningTask)
+
+	e.GET("/ws", func(c *gin.Context) {
+		WsHandler(c, hook)
+	})
+
+	e.StaticFile("/", "./dist/index.html")
+
+	e.Static("/assets", "./dist/assets")
+	e.StaticFile("/favicon.ico", "./dist/favicon.ico")
 }
 
