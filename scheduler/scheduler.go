@@ -5,6 +5,7 @@ import (
 	"maa-server/config"
 	"maa-server/utils"
 	"time"
+	log "github.com/sirupsen/logrus"
 )
 
 type ScheduleStruct struct {
@@ -27,10 +28,12 @@ func Schedule() {
 			time.Sleep(time.Second * 5)
 			continue
 		}else{
-			if utils.IsGameReady() == ""{
+			result := utils.IsGameReady()
+			if result == ""{
 				time.Sleep(time.Second * 5)
 				continue
 			}else{
+				log.Infoln(result)
 				break
 			}
 		}

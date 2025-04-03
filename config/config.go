@@ -84,7 +84,7 @@ func init() {
 	if err != nil {
 		log.Panicln("unmarshal config error: ", err)
 	}
-	log.Infoln(Conf)
+	// log.Infoln(Conf)
 
 	D.HomeDir = D.ExecuteDir
 

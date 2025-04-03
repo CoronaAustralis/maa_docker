@@ -10,7 +10,6 @@ if [ $PROXY ]; then
     git config --global https.proxy $PROXY
     export HTTP_PROXY=$PROXY
     export HTTPS_PROXY=$PROXY
-    echo "add git proxy"
 fi
 
 /app/main

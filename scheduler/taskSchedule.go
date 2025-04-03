@@ -3,6 +3,7 @@ package scheduler
 import (
 	"bufio"
 	"context"
+	"io"
 	"maa-server/config"
 	"maa-server/utils"
 
@@ -49,49 +50,68 @@ func GetTask() config.TaskCluster {
 	return config.TaskCluster{}
 }
 
+
 func RunTask(task config.TaskCluster) {
-	if MaaStartGame() {
-		ForceStopCallback(task)
+	// 启动游戏
+	if startGameFailed := MaaStartGame(); startGameFailed {
+		handleTaskFailure(task)
 		return
 	}
 
+	// 执行任务列表
 	for _, v := range task.Tasks {
 		log.Infoln("开始任务：", v)
-		flag := 0
-		for flag < 3 {
-			flag++
-			isCancel, err := MaaRun(v)
-			if isCancel {
-				ForceStopCallback(task)
-				return
-			}
-			if err != nil {
-				log.Infoln("任务执行失败：", v)
-				log.Infoln("重启游戏。。。")
-				if MaaStopGame() {
-					ForceStopCallback(task)
-					return
-				}
-				if MaaStartGame() {
-					ForceStopCallback(task)
-					return
-				}
-			} else {
-				break
-			}
-		}
-		if flag == 3 {
-			log.Errorln("达到最大重试次数")
-			ForceStopCallback(task)
+
+		// 重试任务执行
+		if !retryTaskExecution(v, task, 3) {
+			log.Errorln("达到最大重试次数，任务失败")
+			handleTaskFailure(task)
 			return
 		}
 	}
 
 	// 更新任务时间
+	updateTaskTime(task)
+}
+
+// 重试任务执行逻辑
+func retryTaskExecution(taskName string, task config.TaskCluster, maxRetries int) bool {
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		isCancel, err := MaaRun(taskName)
+		if isCancel {
+			handleTaskFailure(task)
+			return false
+		}
+		if err != nil {
+			log.Errorf("任务执行失败：%s，重试 %d/%d 次", taskName, attempt, maxRetries)
+			log.Infoln("重启游戏...")
+			if restartGameFailed := restartGame(); restartGameFailed {
+				handleTaskFailure(task)
+				return false
+			}
+		} else {
+			// 任务执行成功
+			return true
+		}
+	}
+	return false
+}
+
+// 重启游戏
+func restartGame() bool {
+	if stopGameFailed := MaaStopGame(); stopGameFailed {
+		return true
+	}
+	return MaaStartGame()
+}
+
+// 更新任务时间
+func updateTaskTime(task config.TaskCluster) {
 	tmp, exists := config.Conf.TaskCluster[task.Hash]
 	if !exists {
 		return
 	}
+
 	if task.Time.Equal(tmp.Time) {
 		switch task.Type {
 		case "day":
@@ -108,7 +128,8 @@ func RunTask(task config.TaskCluster) {
 	}
 }
 
-func ForceStopCallback(task config.TaskCluster) {
+// 处理任务失败逻辑
+func handleTaskFailure(task config.TaskCluster) {
 	tmp, exists := config.Conf.TaskCluster[task.Hash]
 	if !exists {
 		return
@@ -118,52 +139,45 @@ func ForceStopCallback(task config.TaskCluster) {
 	config.UpdateConfig()
 }
 
+// 执行单个任务
 func MaaRun(task string) (bool, error) {
 	return ExecuteCommand("tmp/" + task)
 }
 
+// 启动游戏
 func MaaStartGame() bool {
 	log.Infoln("启动游戏")
 	isCancel, err := ExecuteCommand("template/start")
 	if err != nil {
+		log.Errorln("启动游戏失败：", err)
 		return true
 	}
 	return isCancel
 }
 
+// 停止游戏
 func MaaStopGame() bool {
 	log.Infoln("结束游戏")
-	// isCancel, _ := ExecuteCommand("template/end")
-	// return isCancel
 	utils.StopGame()
 	return false
 }
 
+// 执行命令
 func ExecuteCommand(command string) (bool, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // 确保上下文被正确释放
+	defer cancel()
 
 	ScheduleData.MaaCancelFunc = cancel
 	cmd := exec.CommandContext(ctx, "maa", "run", command)
 
+	// 设置标准输出和标准错误
 	stdoutPipe, _ := cmd.StdoutPipe()
 	stderrPipe, _ := cmd.StderrPipe()
 
 	// 启动 goroutine 实时读取标准输出
-	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			log.Infof("\x1b[36m[MAA STDOUT]\x1b[0m %s", scanner.Text())
-		}
-	}()
+	go logCommandOutput(stdoutPipe, "[MAA STDOUT]", "\x1b[36m")
+	go logCommandOutput(stderrPipe, "[MAA STDERR]", "\x1b[33m")
 
-	// 启动 goroutine 实时读取标准错误
-	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			log.Warnf("\x1b[33m[MAA STDERR]\x1b[0m %s", scanner.Text())
-		}
-	}()
 	// 执行命令
 	err := cmd.Run()
 
@@ -173,7 +187,7 @@ func ExecuteCommand(command string) (bool, error) {
 		return true, nil
 	}
 
-	// 返回错误（如果有）
+	// 返回错误
 	if err != nil {
 		log.Errorf("Command '%s' exited with error: %v\n", command, err)
 		return false, err
@@ -181,4 +195,12 @@ func ExecuteCommand(command string) (bool, error) {
 
 	// 正常完成
 	return false, nil
+}
+
+// 实时日志输出
+func logCommandOutput(pipe io.ReadCloser, prefix, color string) {
+	scanner := bufio.NewScanner(pipe)
+	for scanner.Scan() {
+		log.Infof("%s%s %s\x1b[0m", color, prefix, scanner.Text())
+	}
 }

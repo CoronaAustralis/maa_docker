@@ -2,7 +2,7 @@
   "task_cluster": {
     "8x2t8bi2tkz8pajk": {
       "hash": "8x2t8bi2tkz8pajk",
-      "isEnable": true,
+      "isEnable": false,
       "type": "day",
       "alias": "afternoon",
       "time": "2025-04-01T09:30:03Z",
@@ -16,7 +16,7 @@
     },
     "y6rim77cd2k6myh4": {
       "hash": "y6rim77cd2k6myh4",
-      "isEnable": true,
+      "isEnable": false,
       "type": "day",
       "alias": "morning",
       "time": "2025-04-01T21:30:43Z",

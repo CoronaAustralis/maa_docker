@@ -249,7 +249,6 @@ func IsGameReady() string {
 			}
 		}
 	}
-	log.Infoln(result)
 	return result
 }
 
