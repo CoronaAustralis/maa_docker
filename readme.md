@@ -2,7 +2,7 @@
 一个简单的[MaaAssistantArknights](https://github.com/MaaAssistantArknights/MaaAssistantArknights)的docker版本，实现任务调度和持久化，使用[maa-cli](https://github.com/MaaAssistantArknights/maa-cli)对MAA调度。本项目仅实现docker化和前端。
 
 ## 命令
-`docker run -p 8000:8080 --rm -itd -e CLIENT_TYPE=Offical -v /etc/localtime:/etc/localtime:ro  -v ./config:/app/config maa_docker:latest`
+`docker run -p 8000:8080 --rm -itd -e CLIENT_TYPE=Offical -v /etc/localtime:/etc/localtime:ro  -v ./config:/app/config crestfallmax/maadocker:latest `
 docker run环境变量
 | Key           | 默认值         | 可选值                     | 描述                                   |
 |---------------|----------------|----------------------------|----------------------------------------|

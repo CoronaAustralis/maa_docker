@@ -1,4 +1,0 @@
-# 公开招募
-[[tasks]]
-type = "Recruit"
-params = { select = [4,5], confirm = [3,4,5], times = 2, refresh = true, extra_tags_mode = 2 }
