@@ -1,0 +1,7 @@
+# 只在15:00:00之后进行信用商店相关的操作
+[[tasks]]
+type = "Mall"
+# params = { buy_first = ['招聘许可','加急许可','龙门币'], blacklist = ['家具', '碳'] }
+
+[[tasks.variants]]
+condition = { type = "Time", start = "15:00:00" }
