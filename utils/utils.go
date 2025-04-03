@@ -5,10 +5,12 @@ import (
 	"io"
 	"maa-server/config"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/electricbubble/gadb"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
@@ -134,6 +136,38 @@ func AddOneMonth(t time.Time) time.Time {
 	return time.Date(year, nextMonth, day, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), location)
 }
 
+func MaaInstall() {
+	filePath := "/root/.local/share/maa/lib/libMaaCore.so"
+
+	// 检查文件是否存在
+	for {
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			log.Infoln("MaaCore not found, attempting to install...")
+
+			cmd := exec.Command("maa", "install")
+			output, err := cmd.CombinedOutput()
+
+			exitCode := 0
+			if cmd.ProcessState != nil {
+				exitCode = cmd.ProcessState.ExitCode() // 获取命令退出码
+			}
+
+			if err != nil || exitCode != 0 {
+				log.Errorln("Failed to install MaaCore")
+				log.Errorln("Err output: ", string(output))
+				log.Infoln("Retrying in 5 seconds...")
+				time.Sleep(5 * time.Second)
+			} else {
+				log.Infoln("MaaCore installed successfully.")
+				break
+			}
+		} else {
+			log.Infoln("MaaCore exists, no action needed.")
+			break
+		}
+	}
+}
+
 var D *gadb.Device
 
 func IsDeviceReady() bool {
@@ -159,6 +193,7 @@ func IsDeviceReady() bool {
 		log.Errorln("gadb error")
 		return false
 	}
+
 	err = adbClient.Connect(res[0], port)
 	if err != nil {
 		log.Errorln(err)
@@ -214,7 +249,7 @@ func IsGameReady() string {
 			}
 		}
 	}
-	// log.Infoln(result)
+	log.Infoln(result)
 	return result
 }
 
@@ -228,7 +263,7 @@ func StopGame() {
 }
 
 func InitClientType() {
-	clientType := os.Getenv("client_type")
+	clientType := os.Getenv("CLIENT_TYPE")
 	if clientType == "" {
 		clientType = "Bilibili"
 	}
@@ -254,7 +289,7 @@ func InitClientType() {
 			break
 		}
 	}
-	if(!flag){
+	if !flag {
 		log.Errorln("Error: clientType not found in toml file")
 		return
 	}

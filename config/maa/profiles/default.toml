@@ -1,0 +1,18 @@
+[connection]
+  adb_path = "/usr/bin/adb"
+  device = "192.168.1.2:5555"
+  config = "CompatPOSIXShell"
+
+[resource]
+  global_resource = "Bilibili"
+  platform_diff_resource = ""
+  user_resource = true
+
+[static_options]
+  cpu_ocr = true
+
+[instance_options]
+  touch_mode = "MAATouch"
+  deployment_with_pause = false
+  adb_lite_enabled = false
+  kill_adb_on_exit = false

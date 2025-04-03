@@ -86,16 +86,11 @@ func init() {
 	}
 	log.Infoln(Conf)
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Panicln("Error getting home directory:", err)
-	}
+	D.HomeDir = D.ExecuteDir
 
-	D.HomeDir = homeDir
-
-	D.ProfilesDir = filepath.Join(homeDir, ".config", "maa", "profiles")
-	D.FightDir = filepath.Join(homeDir, ".config", "maa", "tasks")
-	D.InfrastDir = filepath.Join(homeDir, ".config", "maa", "infrast")
+	D.ProfilesDir = filepath.Join(D.HomeDir, "config", "maa", "profiles")
+	D.FightDir = filepath.Join(D.HomeDir, "config", "maa", "tasks")
+	D.InfrastDir = filepath.Join(D.HomeDir, "config", "maa", "infrast")
 
 	if _, err := toml.DecodeFile(filepath.Join(D.ProfilesDir, "default.toml"), Profiles); err != nil {
 		log.Fatalf("Error decoding TOML file: %v", err)

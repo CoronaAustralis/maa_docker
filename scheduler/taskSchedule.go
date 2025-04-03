@@ -51,13 +51,7 @@ func GetTask() config.TaskCluster {
 
 func RunTask(task config.TaskCluster) {
 	if MaaStartGame() {
-		tmp, exists := config.Conf.TaskCluster[task.Hash]
-		if !exists {
-			return
-		}
-		tmp.IsEnable = false
-		config.Conf.TaskCluster[task.Hash] = tmp
-		config.UpdateConfig()
+		ForceStopCallback(task)
 		return
 	}
 
@@ -68,15 +62,18 @@ func RunTask(task config.TaskCluster) {
 			flag++
 			isCancel, err := MaaRun(v)
 			if isCancel {
+				ForceStopCallback(task)
 				return
 			}
 			if err != nil {
 				log.Infoln("任务执行失败：", v)
 				log.Infoln("重启游戏。。。")
 				if MaaStopGame() {
+					ForceStopCallback(task)
 					return
 				}
 				if MaaStartGame() {
+					ForceStopCallback(task)
 					return
 				}
 			} else {
@@ -85,13 +82,7 @@ func RunTask(task config.TaskCluster) {
 		}
 		if flag == 3 {
 			log.Errorln("达到最大重试次数")
-			tmp, exists := config.Conf.TaskCluster[task.Hash]
-			if !exists {
-				return
-			}
-			tmp.IsEnable = false
-			config.Conf.TaskCluster[task.Hash] = tmp
-			config.UpdateConfig()
+			ForceStopCallback(task)
 			return
 		}
 	}
@@ -117,13 +108,26 @@ func RunTask(task config.TaskCluster) {
 	}
 }
 
+func ForceStopCallback(task config.TaskCluster) {
+	tmp, exists := config.Conf.TaskCluster[task.Hash]
+	if !exists {
+		return
+	}
+	tmp.IsEnable = false
+	config.Conf.TaskCluster[task.Hash] = tmp
+	config.UpdateConfig()
+}
+
 func MaaRun(task string) (bool, error) {
 	return ExecuteCommand("tmp/" + task)
 }
 
 func MaaStartGame() bool {
 	log.Infoln("启动游戏")
-	isCancel, _ := ExecuteCommand("template/start")
+	isCancel, err := ExecuteCommand("template/start")
+	if err != nil {
+		return true
+	}
 	return isCancel
 }
 

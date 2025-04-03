@@ -20,7 +20,8 @@ var ScheduleData = ScheduleStruct{
 }
 
 func Schedule() {
-	for {
+	utils.MaaInstall()
+	for{
 		ok := utils.IsDeviceReady()
 		if !ok {
 			time.Sleep(time.Second * 5)
@@ -29,8 +30,12 @@ func Schedule() {
 			if utils.IsGameReady() == ""{
 				time.Sleep(time.Second * 5)
 				continue
+			}else{
+				break
 			}
 		}
+	}
+	for {
 		task := GetTask()
 		if task.Hash == "" {
 			if(!ScheduleData.IsStop){
