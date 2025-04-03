@@ -2,7 +2,7 @@
 一个简单的[MaaAssistantArknights](https://github.com/MaaAssistantArknights/MaaAssistantArknights)的docker版本，实现任务调度和持久化，使用[maa-cli](https://github.com/MaaAssistantArknights/maa-cli)对MAA调度。本项目仅实现docker化和前端。
 
 ## 命令
-`docker run -p 8080:8080 --rm -itd -e CLIENT_TYPE=Offical -v /etc/localtime:/etc/localtime:ro  -v ./config:/app/config crestfallmax/maa-docker:latest `
+`docker run -p 8080:8080 --rm -itd -e CLIENT_TYPE=Offical -v /etc/localtime:/etc/localtime:ro  -v ./config:/app/config crestfallmax/maa_docker:latest `
 docker run环境变量
 | Key           | 默认值         | 可选值                     | 描述                                   |
 |---------------|----------------|----------------------------|----------------------------------------|
@@ -18,8 +18,8 @@ docker run环境变量
 ## 注意
 1. 对于当前正在执行的簇，所有修改，包括删除，都只会在下一次运行时生效，选择右上角`强行结束任务簇`使修改快速生效，但是会强行结束当前任务簇。
 2. 因设计原因，infrast文件是全局生效的，所以只需要上传一次就行。[排班表生成器](https://ark.yituliu.cn/tools/schedule)生成infrast文件。
-3. 强行结束任务簇或任务重试失败都会使其状态变为未启用
+3. 强行结束任务簇或任务重试失败都会使其状态变为未启用。
 
 ## 预览
-![one](https://raw.githubusercontent.com/CoronaAustralis/maa_docker/master/doc/assets/one.png)
-![two](https://raw.githubusercontent.com/CoronaAustralis/maa_docker/master/doc/assets/two.png)
+![one](https://raw.githubusercontent.com/CoronaAustralis/maa_docker/master/docs/assets/one.png)
+![two](https://raw.githubusercontent.com/CoronaAustralis/maa_docker/master/docs/assets/two.png)
