@@ -21,6 +21,8 @@ func Init(e *gin.Engine) {
 	
 	api.POST("/UploadInfrastFile",UploadInfrastFile)
 
+	api.POST("/UpdateEmailPush",UpdateEmailPush)
+
 	api.GET("/CheckGame",CheckGame)
 
 	api.GET("/GetRunningTask",GetRunningTask)

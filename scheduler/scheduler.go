@@ -21,6 +21,7 @@ var ScheduleData = ScheduleStruct{
 }
 
 func Schedule() {
+	utils.EmailPush()
 	utils.MaaInstall()
 	for{
 		ok := utils.IsDeviceReady()

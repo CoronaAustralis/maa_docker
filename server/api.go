@@ -27,7 +27,7 @@ func GetTaskCluster(c *gin.Context) {
 		queue[v.Type] = append(queue[v.Type], v)
 	}
 	typePriority := []string{"month", "week", "day", "custom"}
-	for _, i := range typePriority {
+	for _, i := range typePriority {	
 		if len(queue[i]) > 0 {
 			sort.Sort(scheduler.ByTime(queue[i]))
 		}
@@ -277,4 +277,20 @@ func UploadInfrastFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 	})
+}
+
+func UpdateEmailPush(c *gin.Context) {
+	var data config.EmailPushStruct
+	if err := c.BindJSON(&data); err != nil {
+		log.Errorln(err)
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg":"参数错误"})
+		return
+	}
+	if data.Token == "" && data.EmailAddress == "" {
+		c.JSON(http.StatusOK, gin.H{"code": 0,"data":config.Conf.EmailPush})
+		return
+	}
+	config.Conf.EmailPush = data
+	config.UpdateConfig()
+	c.JSON(http.StatusOK, gin.H{"code": 0,"data":config.Conf.EmailPush})
 }

@@ -132,11 +132,12 @@ func updateTaskTime(task config.TaskCluster) {
 func handleTaskFailure(task config.TaskCluster) {
 	tmp, exists := config.Conf.TaskCluster[task.Hash]
 	if !exists {
-		return
+	}else{
+		tmp.IsEnable = false
+		config.Conf.TaskCluster[task.Hash] = tmp
+		config.UpdateConfig()
 	}
-	tmp.IsEnable = false
-	config.Conf.TaskCluster[task.Hash] = tmp
-	config.UpdateConfig()
+	
 }
 
 // 执行单个任务

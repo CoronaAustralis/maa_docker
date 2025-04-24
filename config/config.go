@@ -45,6 +45,13 @@ type TaskCluster struct {
 	Tasks    []string  `json:"tasks"`
 }
 
+type EmailPushStruct struct {
+	Host	 string `json:"host"`
+	Port	 int    `json:"port"`
+	EmailAddress string `json:"email_address"`
+	Token 	 string `json:"token"`
+}
+
 type DStruct struct {
 	ExecuteDir  string
 	HomeDir     string
@@ -57,6 +64,7 @@ type DStruct struct {
 type Config struct {
 	TaskCluster     map[string]TaskCluster `json:"task_cluster"`
 	TemplateCluster TaskCluster            `json:"template_cluster"`
+	EmailPush       EmailPushStruct       `json:"email_push"`
 }
 
 var Conf = &Config{TaskCluster: make(map[string]TaskCluster)}
